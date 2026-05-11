@@ -6,7 +6,7 @@
 |------|------|------|
 | `schematic_read` | 读取当前原理图页面的完整电路语义快照（器件、引脚网络、DRC） | `{}` |
 | `schematic_review` | 读取全工程所有原理图页面的网表文件，适合全局审查、BOM 核查 | `{}` |
-| `component_select` | 在 EDA 系统库中搜索候选器件，返回给用户确认 | `keyword`（必填）, `limit`（2-20，默认 20） |
+| `component_select` | 在 EDA 系统库中搜索候选器件，返回给用户确认 | `keyword`（必填）, `limit`（2-20，默认 20）, `interactive`（可选，默认 true，opencode CLI 请设为 false） |
 | `component_place` | 引导放置已确认的器件列表 | `components`（必填，uuid + libraryUuid）, `timeoutSeconds`（30-180，默认 60） |
 
 ## 透传 API 工具（需开启开关）
@@ -25,5 +25,5 @@
 - `schematic_read` 仅覆盖当前活动页面，审查多页电路请用 `schematic_review`
 - `schematic_review` 会返回完整网表文本，适合 AI 做全局分析
 - 电源符号（VCC/GND 及其变体）禁止通过 `component_select` / `component_place` 搜索或放置，需要用户在 EDA 中手动添加
-- `component_select` 调用后需等待用户确认器件（侧边栏交互），取消或跳过不会重试
+- `component_select` 默认需等待侧边栏确认（`interactive: true`），在 opencode CLI 等无图形界面环境请传 `interactive: false`，由 AI 自行筛选候选器件
 - 开启透传 API 工具后，AI 调用 `api_invoke` 前必须先通过 `api_search` 确认参数签名

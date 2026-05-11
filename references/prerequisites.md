@@ -146,6 +146,158 @@ cd ~/.opencode/jlceda-mcp-hub/mcp-hub
 node config/esbuild.prod.mjs
 ```
 
+#### 3d. 修正 component_place 工具定义
+
+文件：`~/.opencode/jlceda-mcp-hub/mcp-hub/src/data/mcp-tool-definitions.json`
+
+查找 `component_place` 段中 `timeoutSeconds` 对象结尾后的原始代码：
+
+<details>
+<summary>原始代码（点击展开）</summary>
+
+```json
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 180,
+          "default": 60,
+          "description": "单个器件放置超时时间，单位秒，范围 30-180，默认 60。"
+        }
+      },
+      "required": [
+        "components"
+      ]
+```
+
+</details>
+
+若文件中此段与该原始代码**完全匹配**，则替换为：
+
+<details>
+<summary>修正后代码（点击展开）</summary>
+
+```json
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 180,
+          "default": 60,
+          "description": "单个器件放置超时时间，单位秒，范围 30-180，默认 60。"
+        },
+        "interactive": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否启用交互放置面板。false 时跳过侧边栏确认，直接开始放置流程。无图形界面的环境（如 opencode CLI）应设为 false。"
+        }
+      },
+      "required": [
+        "components"
+      ]
+```
+
+</details>
+
+替换完成后保存。
+
+#### 3e. 修正 component_place 分发器侧边栏等待
+
+同样的问题存在于 `component_place` 的分发器逻辑：它在放置前等待侧边栏的"开始"按钮点击，无界面环境下会永久挂起。
+
+文件：`~/.opencode/jlceda-mcp-hub/mcp-hub/src/server/mcp/tool-dispatcher.ts`
+
+查找 `handleComponentPlace` 方法中侧边栏等待的原始代码：
+
+<details>
+<summary>原始代码（点击展开）</summary>
+
+```typescript
+		this.clearInteractionState();
+		writePlaceInteraction();
+		try {
+			const startResponse = await this.waitForInteractionResponse(requestId, ['cancel', 'start-placement']);
+			if (startResponse.action === 'cancel') {
+				return finalizeCancelled();
+			}
+
+			interaction.started = true;
+			interaction.canStart = false;
+			interaction.canCancel = true;
+			interaction.statusText = '已开始放置，请按顺序在原理图中点击放置器件。';
+			writePlaceInteraction();
+
+			for (let index = 0; index < placementPayload.components.length; index += 1) {
+				const component = placementPayload.components[index];
+				if (this.tryConsumeInteractionCancel(requestId)) {
+```
+
+</details>
+
+若文件中此段与该原始代码**完全匹配**，则替换为：
+
+<details>
+<summary>修正后代码（点击展开）</summary>
+
+```typescript
+		const interactiveMode = argumentsObject.interactive !== false;
+
+		this.clearInteractionState();
+		writePlaceInteraction();
+		try {
+			if (interactiveMode) {
+				const startResponse = await this.waitForInteractionResponse(requestId, ['cancel', 'start-placement']);
+				if (startResponse.action === 'cancel') {
+					return finalizeCancelled();
+				}
+				interaction.started = true;
+				interaction.canStart = false;
+				interaction.canCancel = true;
+				interaction.statusText = '已开始放置，请按顺序在原理图中点击放置器件。';
+			} else {
+				interaction.started = true;
+				interaction.canStart = false;
+				interaction.canCancel = false;
+				interaction.statusText = '非交互模式：按顺序在原理图中点击放置器件。';
+			}
+			writePlaceInteraction();
+
+			for (let index = 0; index < placementPayload.components.length; index += 1) {
+				const component = placementPayload.components[index];
+				if (interactiveMode && this.tryConsumeInteractionCancel(requestId)) {
+```
+
+</details>
+
+替换完成后保存。然后将同一文件中第二个 `this.tryConsumeInteractionCancel(requestId)`（位于 placement 轮询循环内）也加上 `interactiveMode &&` 条件保护：
+
+<details>
+<summary>原始代码（点击展开）</summary>
+
+```typescript
+				while (Date.now() - startedAt < placementPayload.timeoutSeconds * 1000) {
+						if (this.tryConsumeInteractionCancel(requestId)) {
+```
+
+</details>
+
+替换为：
+
+<details>
+<summary>修正后代码（点击展开）</summary>
+
+```typescript
+				while (Date.now() - startedAt < placementPayload.timeoutSeconds * 1000) {
+						if (interactiveMode && this.tryConsumeInteractionCancel(requestId)) {
+```
+
+</details>
+
+#### 3f. 最终重新构建
+
+```bash
+cd ~/.opencode/jlceda-mcp-hub/mcp-hub
+node config/esbuild.prod.mjs
+```
+
 ### 4. 创建 systemd 用户服务
 
 写入 `~/.config/systemd/user/jlceda-mcp-hub.service`：

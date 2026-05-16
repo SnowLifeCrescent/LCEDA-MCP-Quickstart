@@ -310,12 +310,12 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/node /home/fgj/.opencode/jlceda-mcp-hub/mcp-hub/out/server/runtime.js \
-    --storage-directory /home/fgj/.opencode/jlceda-mcp-hub/data \
+ExecStart=/usr/bin/node /home/env_example/.opencode/jlceda-mcp-hub/mcp-hub/out/server/runtime.js \
+    --storage-directory /home/env_example/.opencode/jlceda-mcp-hub/data \
     --session-id standalone \
     --host 127.0.0.1 \
     --port 8765 \
-    --status-file /home/fgj/.opencode/jlceda-mcp-hub/data/runtime-status.json \
+    --status-file /home/env_example/.opencode/jlceda-mcp-hub/data/runtime-status.json \
     --extension-version 1.5.4 \
     --http-port 7655 \
     --enable-system-log true \
@@ -328,7 +328,7 @@ Environment=NODE_ENV=production
 WantedBy=default.target
 ```
 
-> `/home/fgj/` 替换为你的实际 home 目录路径。
+> `/home/env_example/` 替换为你的实际 home 目录路径。
 
 ### 5. 注册服务（不自启）
 

@@ -43,6 +43,7 @@ systemctl --user start jlceda-mcp-hub.service
 
 调用 `schematic_read` 工具：
 
+- 只尝试读取第一个元件，查看是否有返回数据，不对电路做出任何分析。
 - **成功返回数据** → "与嘉立创 EDA 连接正常"，继续。
 - **返回桥接错误** → 输出：
 
@@ -61,7 +62,7 @@ systemctl --user start jlceda-mcp-hub.service
 
 ### 步骤 5：加载工具目录
 
-加载 `references/tools.md`，向用户说明可用工具。
+加载 `references/tools.md`，读取可用工具。
 
 ### 步骤 6：根据用户需求执行
 
@@ -72,4 +73,4 @@ systemctl --user start jlceda-mcp-hub.service
 - **按需加载**：每个引用文件只在对应步骤加载，不提前加载无关内容
 - **token 优先**：严格分层，前置校验 → 技能说明 → 工具表 → 工作流，逐级按需
 - **自动修复**：测试连接失败时提供明确的排查指引和端口修正路径
-- **关闭自启动**：service 默认 disable，仅在引用 skill 手动 `start`
+
